@@ -1,19 +1,13 @@
+import { LocationPreview } from "./LocationPreview"
 
-
-export function LocationList({locations}){
+export function LocationList({ locations }) {
 
 
 
     return <div className="location-list">
         hello from list
         <ul>
-        {locations.map(loc =>
-                <li key={loc._id}>
-                    {loc.cityName}
-                    {loc.weatherData.temp}
-                    {/* <CarPreview car={car}/> */}
-                </li>)
-            }
+            {locations.map(loc => <LocationPreview key={loc._id} loc={loc} />)}
         </ul>
     </div>
 }

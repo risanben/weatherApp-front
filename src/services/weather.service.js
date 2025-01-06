@@ -4,9 +4,10 @@ import { storageService } from "./async-storage.service"
 export const weatherService = {
     loadLocations,
     save,
-    fetchWeather
+    fetchWeather,
+    fetchGeo
 }
-
+const apiKey = import.meta.env.VITE_API_KEY
 const STORAGE_KEY = 'locs'
 
 async function loadLocations() {
@@ -23,7 +24,7 @@ async function loadLocations() {
 }
 
 async function fetchWeather(loc) {
-    console.warn('fetching data')
+    console.log('fetching weather data')
     try {
         const response = await fetch(
             `https://api.openweathermap.org/data/3.0/onecall?lat=${loc.coordinates.lat}&lon=${loc.coordinates.lng}&appid=${apiKey}`
@@ -39,6 +40,28 @@ async function fetchWeather(loc) {
         console.error('error while fetching the data', err)
         return null;
     }
+}
+
+async function fetchGeo(cityName) {
+    console.log('fetching geo data')
+    try {
+        const response = await fetch(
+            `http://api.openweathermap.org/geo/1.0/direct?q=${cityName}&limit=3&appid=${apiKey}`
+        )
+        if (!response.ok) {
+            throw new Error("Location not found")
+        }
+        const data = await response.json()
+        return await _reduceGeoData(data)
+    } catch (err) {
+        console.error('error while fetching geo', err)
+    }
+}
+
+async function _reduceGeoData(geoData) {
+    return geoData.map((loc) => {
+        return { cityName: loc.name, coordinates: { lat: loc.lat, lng: loc.lon } }
+    })
 }
 
 async function _reduceData(loc, locData) {
@@ -57,26 +80,23 @@ async function _reduceData(loc, locData) {
 }
 
 async function save(loc) {
-    let locToSave
+    let savedLoc
     if (loc._id) {
         const locToSave = {
             _id: loc._id,
             cityName: loc.cityName,
             coordinates: loc.coordinates,
-            weatherData:loc.weatherData
+            weatherData: loc.weatherData
         }
         savedLoc = await storageService.put(STORAGE_KEY, locToSave)
     } else {
-        console.error('a location with no idea was sent to save unsuccesfully')
-        // const carToSave = {
-        //     vendor: car.vendor,
-        //     price: car.price,
-        //     speed: car.speed,
-        //     // Later, owner is set by the backend
-        //     owner: userService.getLoggedinUser(),
-        //     msgs: []
-        // }
-        // savedCar = await storageService.post(STORAGE_KEY, carToSave)
+        console.log('a location with no idea was sent to save')
+        const locToSave = {
+            cityName: loc.cityName,
+            coordinates: loc.coordinates,
+            weatherData: loc.weatherData
+        }
+        savedLoc = await storageService.post(STORAGE_KEY, locToSave)
     }
     return savedLoc
 }
@@ -90,9 +110,9 @@ const initialLocs = [
             lat: 32.0853,
             lng: 34.7818
         },
-        weatherData:{
-            temp:22.5,
-            date:1736152504899
+        weatherData: {
+            temp: 22.5,
+            date: 1736152504899
         }
     },
     {
@@ -102,9 +122,9 @@ const initialLocs = [
             lat: 51.5072,
             lng: 0.1276
         },
-        weatherData:{
-            temp:16.2,
-            date:1736152504899
+        weatherData: {
+            temp: 16.2,
+            date: 1736152504899
         }
     }
 ]
